@@ -126,7 +126,7 @@ module Bosh::Director
 
         expect(AgentClient).not_to receive(:with_vm_credentials_and_agent_id)
 
-        expect(dns_manager).to receive(:publish_dns_records)
+        expect(dns_manager).to receive(:publish_dns_records).twice
 
         subnet_spec = {
           'range' => '10.10.10.0/24',
