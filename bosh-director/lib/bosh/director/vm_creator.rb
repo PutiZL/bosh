@@ -178,7 +178,7 @@ module Bosh::Director
             ip = network['ip']
             name = instance_model.uuid + '.' + spec['job']['name'] + '.' + network_name + '.' + spec['deployment'] + '.' + Config.canonized_dns_domain_name
             @logger.debug("Adding local dns record with name #{name} and ip #{ip}")
-            Bosh::Director::Config.db.transaction do
+            Bosh::Director::Config.db.transaction(:isolation => :repeatable, :retry_on=>[Sequel::SerializationFailure]) do
               Bosh::Director::Models::LocalDnsRecord.create(:name => name, :ip => ip, :instance_id => instance_model.id )
             end
           end

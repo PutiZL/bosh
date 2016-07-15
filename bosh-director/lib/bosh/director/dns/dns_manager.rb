@@ -138,11 +138,12 @@ module Bosh::Director
           @logger.warn("Failed to flush DNS cache: #{stderr.chomp}")
         end
       end
+      publish_dns_records
     end
 
     def publish_dns_records
       if publisher_enabled?
-        Bosh::Director::Config.db.transaction(:rollback => :always) do
+        Bosh::Director::Config.db.transaction(:isolation => :repeatable, :retry_on=>[Sequel::SerializationFailure]) do
           dns_records = @dns_publisher.export_dns_records
           @dns_publisher.publish(dns_records)
           @dns_publisher.broadcast
@@ -152,7 +153,7 @@ module Bosh::Director
 
     def cleanup_dns_records
       if publisher_enabled?
-        Bosh::Director::Config.db.transaction(:rollback => :always) do
+        Bosh::Director::Config.db.transaction(:isolation => :repeatable, :retry_on=>[Sequel::SerializationFailure]) do
           @dns_publisher.cleanup_blobs
         end
       end

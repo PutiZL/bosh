@@ -81,6 +81,36 @@ describe 'local DNS', type: :integration do
     end
   end
 
+  context 'recreates missing VMs with cck' do
+    let(:runner) { bosh_runner_in_work_dir(ClientSandbox.test_release_dir) }
+
+    it 'automatically recreates missing VMs when cck --auto is used' do
+      manifest_deployment = initial_deployment(5)
+
+      current_sandbox.cpi.vm_cids.each do |vm_cid|
+        current_sandbox.cpi.delete_vm(vm_cid)
+      end
+
+      cloudcheck_response = bosh_run_cck_with_auto
+      expect(cloudcheck_response).to match(regexp('missing.'))
+      expect(cloudcheck_response).to match(regexp('Applying resolutions...'))
+      expect(cloudcheck_response).to match(regexp('Cloudcheck is finished'))
+      expect(cloudcheck_response).to_not match(regexp('No problems found'))
+      expect(cloudcheck_response).to_not match(regexp('1. Skip for now
+  2. Reboot VM
+  3. Recreate VM using last known apply spec
+  4. Delete VM
+  5. Delete VM reference (DANGEROUS!)'))
+
+      expect(runner.run('cloudcheck --report')).to match(regexp('No problems found'))
+
+      5.times do |i|
+        check_agent_log(i)
+      end
+      check_agent_etc_hosts(5, 5)
+    end
+  end
+
   def initial_deployment(number_of_instances, max_in_flight=1)
     manifest_deployment = Bosh::Spec::Deployments.test_release_manifest
     manifest_deployment.merge!(
@@ -124,5 +154,22 @@ describe 'local DNS', type: :integration do
         expect(words[1]).to match(hostname_regexp)
       end
     end
+  end
+
+  def bosh_run_cck_with_resolution(num_errors, option=1)
+    resolution_selections = "#{option}\n"*num_errors + "yes"
+    output = `echo "#{resolution_selections}" | bosh -c #{ClientSandbox.bosh_config} cloudcheck`
+    if $?.exitstatus != 0
+      fail("Cloud check failed, output: #{output}")
+    end
+    output
+  end
+
+  def bosh_run_cck_with_auto
+    output = `bosh -c #{ClientSandbox.bosh_config} cloudcheck --auto`
+    if $?.exitstatus != 0
+      fail("Cloud check failed, output: #{output}")
+    end
+    output
   end
 end
