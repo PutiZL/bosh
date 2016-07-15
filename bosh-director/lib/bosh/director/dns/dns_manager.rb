@@ -146,8 +146,8 @@ module Bosh::Director
         Bosh::Director::Config.db.transaction(:isolation => :repeatable, :retry_on=>[Sequel::SerializationFailure]) do
           dns_records = @dns_publisher.export_dns_records
           @dns_publisher.publish(dns_records)
-          @dns_publisher.broadcast
         end
+        @dns_publisher.broadcast
       end
     end
 
