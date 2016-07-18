@@ -48,7 +48,7 @@ vm_guestos=ubuntu-64
 cat > $ovf/$vm_hostname.vmx <<EOS
 config.version = "8"
 virtualHW.version = 8
-floppy0.present = "true"
+floppy0.present = "FALSE"
 nvram = "nvram"
 deploymentPlatform = "windows"
 virtualHW.productCompatibility = "hosted"
